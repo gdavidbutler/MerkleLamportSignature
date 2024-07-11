@@ -303,5 +303,7 @@ mlsRecover(
       v->f(c, wh + j * b);
     }
   }
+  if (v->d)
+    v->d(c);
   return (wh);
 }
