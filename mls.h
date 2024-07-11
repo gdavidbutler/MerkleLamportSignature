@@ -88,6 +88,7 @@ mlsSz_t
 mlsRcSz(
   unsigned char /* (2^h) bytes per hash  */
  ,const unsigned char * /* signature */
+ ,unsigned int          /* signature length */
 );
 
 /* return pointer to public hash in recover area, 0 on error */
@@ -97,4 +98,5 @@ mlsRecover(
  ,unsigned char *       /* recover area (mslRcSz) */
  ,const unsigned char * /* signed hash */
  ,const unsigned char * /* signature */
+ ,unsigned int          /* signature length */
 );

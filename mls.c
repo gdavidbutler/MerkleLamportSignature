@@ -57,7 +57,7 @@ mlsWaSz(
    *      (1) node level
    * plus (2^h) hash size node
    */
-  return ((h + 3U + 1U + s + s - 1U) * (1U + (1U << h)));
+  return ((h + 3U + 1U + 2 * s - 1U) * (1U + (1U << h)));
 }
 
 unsigned char *
@@ -80,7 +80,7 @@ mlsPublic(
    || !(c = v->h->a()))
     return (0);
   s >>= v->h->h;
-  wh = w + v->h->h + 4U + v->s + v->s - 1U;
+  wh = w + v->h->h + 3U + 1U + 2 * v->s - 1U;
   b = 1U << v->h->h;
   b2 = b << 1U;
   for (i = j = 0; i < s; ++i, ++j) {
@@ -149,7 +149,7 @@ mlsSign(
    || !(c = v->h->a()))
     return (0);
   s >>= v->h->h;
-  wh = w + v->h->h + 4U + v->s + v->s - 1U;
+  wh = w + v->h->h + 3U + 1U + 2 * v->s - 1U;
   b = 1U << v->h->h;
   b2 = b << 1U;
   o <<= v->h->h + 3U + 1U;
@@ -226,8 +226,9 @@ mlsSz_t
 mlsRcSz(
   unsigned char h
  ,const unsigned char *g
+ ,unsigned int l
 ){
-  if (!g)
+  if (!g || !l || l < 1U + *g * (1U + (1U << h)) + (1U << (h + 3U + 1U + h)))
     return (0);
   /* signings from levels inside signature */
   return(mlsWaSz(h, *g + *(g + 1U + *g * (1U + (1U << h)) + (1U << (h + 3U + 1U + h)))));
@@ -239,6 +240,7 @@ mlsRecover(
  ,unsigned char *w
  ,const unsigned char *a
  ,const unsigned char *g
+ ,unsigned int l
 ){
   unsigned char *wh; /* work area hashes */
   void *c;
@@ -249,19 +251,30 @@ mlsRecover(
   unsigned int k;
   unsigned char t;
 
-  if (!v || !w || !a || !g
+  if (!v || !w || !a || !g || !l
    || !v->a || !v->i || !v->u || !v->f
    || !(c = v->a()))
     return (0);
-  wh = w + v->h + 4U + 2 * (*g + *(g + 1U + *g * (1U + (1U << v->h)) + (1U << (v->h + 3U + 1U + v->h)))) - 1U;
+  wh = w + v->h + 3U + 1U + 2 * (*g + *(g + 1U + *g * (1U + (1U << v->h)) + (1U << (v->h + 3U + 1U + v->h)))) - 1U;
   b = 1U << v->h;
   b2 = b << 1U;
+  --l;
   j = *g++;
+  if (l < j + j * b) {
+    wh = 0;
+    goto exit;
+  }
+  l -= j + j * b;
   for (k = 0; k < j; ++k) {
     *(w + k) = *g++;
     for(i = 0; i < b; ++i)
       *(wh + k * b + i) = *g++;
   }
+  if (l < b * 8 * 2 * b) {
+    wh = 0;
+    goto exit;
+  }
+  l -= b * 8 * 2 * b;
   for (k = 0; k < b; ++k) {
     for (t = 0x80; t; t >>= 1U) {
       *(w + j) = 0;
@@ -292,7 +305,17 @@ mlsRecover(
       ++j;
     }
   }
-  for (k = *g++; k; ++j, --k) {
+  if (!l) {
+    wh = 0;
+    goto exit;
+  }
+  --l;
+  k = *g++;
+  if (l < k + k * b) {
+    wh = 0;
+    goto exit;
+  }
+  for (; k; ++j, --k) {
     *(w + j) = *g++;
     for (i = 0; i < b; ++i)
       *(wh + j * b + i) = *g++;
@@ -303,6 +326,7 @@ mlsRecover(
       v->f(c, wh + j * b);
     }
   }
+exit:
   if (v->d)
     v->d(c);
   return (wh);

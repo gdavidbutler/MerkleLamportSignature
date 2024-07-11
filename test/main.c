@@ -88,12 +88,15 @@ printf("s %u 2^s %u o %u pr %u wa %u sg %u\n", c.s, 1U << c.s, o, r, mlsWaSz(c.h
   { /* sign the public key */
     unsigned char *t;
     unsigned char *g;
+    unsigned int s;
+    unsigned int r;
 
     if (!(t = malloc(mlsWaSz(c.h->h, c.s)))) {
       fprintf(stderr, "%s: malloc\n", argv[0]);
       return (1);
     }
-    if (!(g = malloc(mlsSgSz(c.h->h, c.s)))) {
+    s = mlsSgSz(c.h->h, c.s);
+    if (!(g = malloc(s))) {
       fprintf(stderr, "%s: malloc\n", argv[0]);
       return (1);
     }
@@ -102,11 +105,15 @@ printf("s %u 2^s %u o %u pr %u wa %u sg %u\n", c.s, 1U << c.s, o, r, mlsWaSz(c.h
       return (1);
     }
     free(t);
-    if (!(t = malloc(mlsRcSz(c.h->h, g)))) {
+    if (!(r = mlsRcSz(c.h->h, g, s))) {
+      fprintf(stderr, "%s: mlsRcSz\n", argv[0]);
+      return (1);
+    }
+    if (!(t = malloc(r))) {
       fprintf(stderr, "%s: malloc\n", argv[0]);
       return (1);
     }
-    if (!(k = mlsRecover(c.h, t, k, g))) {
+    if (!(k = mlsRecover(c.h, t, k, g, s))) {
       fprintf(stderr, "%s: mlsRecover\n", argv[0]);
       return (1);
     }
