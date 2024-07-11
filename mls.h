@@ -52,7 +52,7 @@ typedef struct {
   unsigned char s;  /* (2^s) number of signings */
 } mlsCtx_t;
 
-/* return size, in bytes, of work area, 0 on mlsSz_t overflow */
+/* return size, in bytes, of work area */
 mlsSz_t
 mlsWaSz(
   unsigned char /* (2^h) bytes per hash  */
@@ -66,7 +66,7 @@ mlsPublic(
  ,unsigned char * /* work area (mlsWaSz) */
 );
 
-/* return size, in bytes, of signature data, 0 on mlsSz_t overflow */
+/* return size, in bytes, of signature data */
 mlsSz_t
 mlsSgSz(
   unsigned char /* (2^h) bytes per hash  */
@@ -83,7 +83,7 @@ mlsSign(
  ,unsigned int          /* signing offset to use (0 to (1 << mlsCtx_t.s) - 1) */
 );
 
-/* return size, in bytes, of recover area, 0 on null s */
+/* return size, in bytes, of recover area, 0 on error */
 mlsSz_t
 mlsRcSz(
   unsigned char /* (2^h) bytes per hash  */
