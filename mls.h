@@ -59,9 +59,9 @@ mlsWaSz(
  ,unsigned char /* (2^s) number of signings */
 );
 
-/* return pointer to public hash in work area, 0 on error */
+/* return pointer to signing hash in work area, 0 on error */
 unsigned char *
-mlsPublic(
+mlsHash(
   mlsCtx_t *
  ,unsigned char * /* work area (mlsWaSz) */
 );
@@ -91,7 +91,7 @@ mlsRcSz(
  ,unsigned int          /* signature length */
 );
 
-/* return pointer to public hash in recover area, 0 on error */
+/* return pointer to signing hash in recover area, 0 on error */
 unsigned char *
 mlsRecover(
   mlsHsh_t *

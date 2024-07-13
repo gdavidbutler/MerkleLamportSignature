@@ -63,11 +63,11 @@ printf("s %u 2^s %u o %u pr %u wa %u sg %u\n", c.s, 1U << c.s, o, r, mlsWaSz(c.h
     fprintf(stderr, "%s: malloc\n", argv[0]);
     return (1);
   }
-  if (!(k = mlsPublic(&c, w))) {
-    fprintf(stderr, "%s: mlsPublic\n", argv[0]);
+  if (!(k = mlsHash(&c, w))) {
+    fprintf(stderr, "%s: mlsHash\n", argv[0]);
     return (1);
   }
-  { /* print public key (merkle hash) */
+  { /* print signing hash (merkle hash) */
     char *bf;
     unsigned int bs;
 
@@ -85,7 +85,7 @@ printf("s %u 2^s %u o %u pr %u wa %u sg %u\n", c.s, 1U << c.s, o, r, mlsWaSz(c.h
 #endif
     free(bf);
   }
-  { /* sign the public key */
+  { /* sign the signing hash */
     unsigned char *t;
     unsigned char *g;
     unsigned int s;
@@ -121,7 +121,7 @@ printf("s %u 2^s %u o %u pr %u wa %u sg %u\n", c.s, 1U << c.s, o, r, mlsWaSz(c.h
     free(w);
     w = t;
   }
-  { /* print public key (merkle hash) */
+  { /* print signing hash (merkle hash) */
     char *bf;
     unsigned int bs;
 

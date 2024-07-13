@@ -61,7 +61,7 @@ mlsWaSz(
 }
 
 unsigned char *
-mlsPublic(
+mlsHash(
   mlsCtx_t *v
  ,unsigned char *w
 ){
