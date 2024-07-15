@@ -223,7 +223,19 @@ mlsSign(
 }
 
 mlsSz_t
-mlsRcSz(
+mlsEgSz(
+  unsigned char h
+ ,const unsigned char *g
+ ,unsigned int l
+){
+  if (!g || !l || l < 1U + *g * (1U + (1U << h)) + (1U << (h + 3U + 1U + h)))
+    return (0);
+  /* signings from levels inside signature */
+  return(mlsSgSz(h, *g + *(g + 1U + *g * (1U + (1U << h)) + (1U << (h + 3U + 1U + h)))));
+}
+
+mlsSz_t
+mlsEwSz(
   unsigned char h
  ,const unsigned char *g
  ,unsigned int l
@@ -235,12 +247,11 @@ mlsRcSz(
 }
 
 unsigned char *
-mlsRecover(
+mlsExtract(
   mlsHsh_t *v
  ,unsigned char *w
  ,const unsigned char *a
  ,const unsigned char *g
- ,unsigned int l
 ){
   unsigned char *wh; /* work area hashes */
   void *c;
@@ -251,30 +262,19 @@ mlsRecover(
   unsigned int k;
   unsigned char t;
 
-  if (!v || !w || !a || !g || !l
+  if (!v || !w || !a || !g
    || !v->a || !v->i || !v->u || !v->f
    || !(c = v->a()))
     return (0);
   wh = w + v->h + 3U + 1U + 2 * (*g + *(g + 1U + *g * (1U + (1U << v->h)) + (1U << (v->h + 3U + 1U + v->h)))) - 1U;
   b = 1U << v->h;
   b2 = b << 1U;
-  --l;
   j = *g++;
-  if (l < j + j * b) {
-    wh = 0;
-    goto exit;
-  }
-  l -= j + j * b;
   for (k = 0; k < j; ++k) {
     *(w + k) = *g++;
     for(i = 0; i < b; ++i)
       *(wh + k * b + i) = *g++;
   }
-  if (l < b * 8 * 2 * b) {
-    wh = 0;
-    goto exit;
-  }
-  l -= b * 8 * 2 * b;
   for (k = 0; k < b; ++k) {
     for (t = 0x80; t; t >>= 1U) {
       *(w + j) = 0;
@@ -305,16 +305,7 @@ mlsRecover(
       ++j;
     }
   }
-  if (!l) {
-    wh = 0;
-    goto exit;
-  }
-  --l;
   k = *g++;
-  if (l < k + k * b) {
-    wh = 0;
-    goto exit;
-  }
   for (; k; ++j, --k) {
     *(w + j) = *g++;
     for (i = 0; i < b; ++i)
@@ -326,7 +317,6 @@ mlsRecover(
       v->f(c, wh + j * b);
     }
   }
-exit:
   if (v->d)
     v->d(c);
   return (wh);

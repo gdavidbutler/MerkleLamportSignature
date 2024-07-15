@@ -105,16 +105,20 @@ printf("s %u 2^s %u o %u pr %u wa %u sg %u\n", c.s, 1U << c.s, o, r, mlsWaSz(c.h
       return (1);
     }
     free(t);
-    if (!(r = mlsRcSz(c.h->h, g, s))) {
-      fprintf(stderr, "%s: mlsRcSz\n", argv[0]);
+    if (mlsEgSz(c.h->h, g, s) != s) {
+      fprintf(stderr, "%s: mlsEgSz\n", argv[0]);
+      return (1);
+    }
+    if (!(r = mlsEwSz(c.h->h, g, s))) {
+      fprintf(stderr, "%s: mlsEwSz\n", argv[0]);
       return (1);
     }
     if (!(t = malloc(r))) {
       fprintf(stderr, "%s: malloc\n", argv[0]);
       return (1);
     }
-    if (!(k = mlsRecover(c.h, t, k, g, s))) {
-      fprintf(stderr, "%s: mlsRecover\n", argv[0]);
+    if (!(k = mlsExtract(c.h, t, k, g))) {
+      fprintf(stderr, "%s: mlsExtract\n", argv[0]);
       return (1);
     }
     free(g);

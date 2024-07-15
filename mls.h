@@ -83,20 +83,27 @@ mlsSign(
  ,unsigned int          /* signing offset to use (0 to (1 << mlsCtx_t.s) - 1) */
 );
 
-/* return size, in bytes, of recover area, 0 on error */
+/* return size, in bytes, of signature data from signature, 0 on error */
 mlsSz_t
-mlsRcSz(
+mlsEgSz(
   unsigned char /* (2^h) bytes per hash  */
  ,const unsigned char * /* signature */
  ,unsigned int          /* signature length */
 );
 
-/* return pointer to signing hash in recover area, 0 on error */
-unsigned char *
-mlsRecover(
-  mlsHsh_t *
- ,unsigned char *       /* recover area (mslRcSz) */
- ,const unsigned char * /* signed hash */
+/* return size, in bytes, of work area from signature, 0 on error */
+mlsSz_t
+mlsEwSz(
+  unsigned char /* (2^h) bytes per hash  */
  ,const unsigned char * /* signature */
  ,unsigned int          /* signature length */
+);
+
+/* return pointer to signing hash in work area, 0 on error */
+unsigned char *
+mlsExtract(
+  mlsHsh_t *
+ ,unsigned char *       /* work area (mlsEwSz) */
+ ,const unsigned char * /* signed hash */
+ ,const unsigned char * /* signature */
 );
