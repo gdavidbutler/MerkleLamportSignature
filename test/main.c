@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#if MLSHASH128
-#include "rmd128.h"
-#else
+#if MLSHASH256
 #include "sha256.h"
+#else
+#include "rmd128.h"
 #endif
 #include "mls.h"
 
@@ -11,10 +11,10 @@ static void *
 hshA(
   void
 ){
-#if MLSHASH128
-  return (malloc(rmd128tsize()));
-#else
+#if MLSHASH256
   return (malloc(sha256tsize()));
+#else
+  return (malloc(rmd128tsize()));
 #endif
 }
 
@@ -31,21 +31,21 @@ main(
   unsigned int o;
 
   if (argc < 3) {
-    fprintf(stderr, "Usage: %s 2^signings signing\n", argv[0]);
+    fprintf(stderr, "Usage: %s 2^signings signing < privateData\n", argv[0]);
     return (1);
   }
   h.a = hshA;
   h.d = free;
-#if MLSHASH128
-  h.i = (void(*)(void *))rmd128init;
-  h.u = (void(*)(void *, const unsigned char *, unsigned int))rmd128update;
-  h.f = (void(*)(void *, unsigned char *))rmd128final;
-  h.h = 4U; /* 2^4 = 16 bytes = 128 bits */
-#else
+#if MLSHASH256
   h.i = (void(*)(void *))sha256init;
   h.u = (void(*)(void *, const unsigned char *, unsigned int))sha256update;
   h.f = (void(*)(void *, unsigned char *))sha256final;
   h.h = 5U; /* 2^5 = 32 bytes = 256 bits */
+#else
+  h.i = (void(*)(void *))rmd128init;
+  h.u = (void(*)(void *, const unsigned char *, unsigned int))rmd128update;
+  h.f = (void(*)(void *, unsigned char *))rmd128final;
+  h.h = 4U; /* 2^4 = 16 bytes = 128 bits */
 #endif
   c.h = &h;
   c.s = atoi(argv[1]);
@@ -58,6 +58,12 @@ printf("s %u 2^s %u o %u pr %u wa %u sg %u\n", c.s, 1U << c.s, o, r, mlsWaSz(c.h
   if (!(c.r = malloc(r))) {
     fprintf(stderr, "%s: malloc\n", argv[0]);
     return (1);
+  }
+  { /* fill private data till full or EOF on stdin */
+    mlsSz_t i;
+    size_t j;
+
+    for (i = 0; i < r && (j = fread(c.r + i, 1, r - i, stdin)) > 0; i += j);
   }
   if (!(w = malloc(mlsWaSz(c.h->h, c.s)))) {
     fprintf(stderr, "%s: malloc\n", argv[0]);
@@ -72,14 +78,14 @@ printf("s %u 2^s %u o %u pr %u wa %u sg %u\n", c.s, 1U << c.s, o, r, mlsWaSz(c.h
     unsigned int bs;
 
     bs = 1U << (h.h + 1);
-#if MLSHASH128
+#if MLSHASH256
     if ((bf = malloc(bs))) {
-      rmd128hex(k, bf);
+      sha256hex(k, bf);
       printf("%.*s\n", bs, bf);
     }
 #else
     if ((bf = malloc(bs))) {
-      sha256hex(k, bf);
+      rmd128hex(k, bf);
       printf("%.*s\n", bs, bf);
     }
 #endif
@@ -130,14 +136,14 @@ printf("s %u 2^s %u o %u pr %u wa %u sg %u\n", c.s, 1U << c.s, o, r, mlsWaSz(c.h
     unsigned int bs;
 
     bs = 1U << (h.h + 1);
-#if MLSHASH128
+#if MLSHASH256
     if ((bf = malloc(bs))) {
-      rmd128hex(k, bf);
+      sha256hex(k, bf);
       printf("%.*s\n", bs, bf);
     }
 #else
     if ((bf = malloc(bs))) {
-      sha256hex(k, bf);
+      rmd128hex(k, bf);
       printf("%.*s\n", bs, bf);
     }
 #endif
