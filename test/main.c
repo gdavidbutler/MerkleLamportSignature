@@ -56,6 +56,7 @@ main(
     fprintf(stderr, "Usage: %s 2^signings signing < privateData\n", argv[0]);
     return (1);
   }
+
   hashContext.a = hashAllocate;
   hashContext.d = free;
 #if MLSHASH256
@@ -69,15 +70,18 @@ main(
   hashContext.f = (void(*)(void *, unsigned char *))rmd128final;
   hashContext.h = 4U; /* 2^4 = 16 bytes = 128 bits */
 #endif
+
   mlsContext.h = &hashContext;
   mlsContext.s = atoi(argv[1]);
   signing = atoi(argv[2]);
+
   if (!(privateDataSize = mlsPrSz(mlsContext.h->h, mlsContext.s))
    || !(workAreaSize = mlsWaSz(mlsContext.h->h, mlsContext.s))
    || !(signatureSize = mlsSgSz(mlsContext.h->h, mlsContext.s))) {
     fprintf(stderr, "%s: number of signings too large\n", argv[0]);
     return (1);
   }
+
   printf("signings 2^%u = %u signing %u: privateDataSize %u signatureSize %u workAreaSize %u\n"
         ,mlsContext.s
         ,1U << mlsContext.s
@@ -85,16 +89,19 @@ main(
         ,privateDataSize
         ,signatureSize
         ,workAreaSize);
+
   if (!(mlsContext.r = malloc(privateDataSize))) {
     fprintf(stderr, "%s: malloc\n", argv[0]);
     return (1);
   }
+
   { /* fill private data till full or EOF on stdin */
     mlsSz_t i;
     size_t j;
 
     for (i = 0; i < privateDataSize && (j = fread(mlsContext.r + i, 1, privateDataSize - i, stdin)) > 0; i += j);
   }
+
   if (!(workArea = malloc(workAreaSize))) {
     fprintf(stderr, "%s: malloc\n", argv[0]);
     return (1);
@@ -104,10 +111,12 @@ main(
     return (1);
   }
   printHashHex(&hashContext, hash);
-  { /* create signature of the signing hash */
+
+  {
     unsigned char *newWorkArea;
     unsigned char *signature;
 
+    /* create signature of the signing hash */
     if (!(newWorkArea = malloc(workAreaSize))) {
       fprintf(stderr, "%s: malloc\n", argv[0]);
       return (1);
@@ -120,6 +129,7 @@ main(
       fprintf(stderr, "%s: mlsSign\n", argv[0]);
       return (1);
     }
+
     /* verify sizes from signature */
     if (mlsEwSz(mlsContext.h->h, signature, signatureSize) != workAreaSize) {
       fprintf(stderr, "%s: mlsEwSz\n", argv[0]);
@@ -129,6 +139,7 @@ main(
       fprintf(stderr, "%s: mlsEgSz\n", argv[0]);
       return (1);
     }
+
     /* extract signing hash from signature */
     if (!(hash = mlsExtract(mlsContext.h, newWorkArea, hash, signature))) {
       fprintf(stderr, "%s: mlsExtract\n", argv[0]);
@@ -139,6 +150,7 @@ main(
     workArea = newWorkArea;
   }
   printHashHex(&hashContext, hash);
+
   free(workArea);
   free(mlsContext.r);
   return (0);
