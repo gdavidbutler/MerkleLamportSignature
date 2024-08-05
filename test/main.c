@@ -7,8 +7,31 @@
 #endif
 #include "mls.h"
 
+static void
+printHashHex(
+  mlsHsh_t *hashContext
+ ,unsigned char *hash
+){
+  char *bf;
+  unsigned int bs;
+
+  bs = 1U << (hashContext->h + 1);
+#if MLSHASH256
+  if ((bf = malloc(bs))) {
+    sha256hex(hash, bf);
+    printf("%.*s\n", bs, bf);
+  }
+#else
+  if ((bf = malloc(bs))) {
+    rmd128hex(hash, bf);
+    printf("%.*s\n", bs, bf);
+  }
+#endif
+  free(bf);
+}
+
 static void *
-hshA(
+hashAllocate(
   void
 ){
 #if MLSHASH256
@@ -23,39 +46,49 @@ main(
   int argc
  ,char *argv[]
 ){
-  unsigned char *w;
-  unsigned char *k;
-  mlsSz_t r;
-  mlsHsh_t h;
-  mlsCtx_t c;
-  unsigned int o;
+  mlsHsh_t hashContext;
+  mlsCtx_t mlsContext;
+  unsigned char *workArea;
+  unsigned char *hash;
+  mlsSz_t privateDataSize;
+  unsigned int workAreaSize;
+  unsigned int signatureSize;
+  unsigned int signing;
 
   if (argc < 3) {
     fprintf(stderr, "Usage: %s 2^signings signing < privateData\n", argv[0]);
     return (1);
   }
-  h.a = hshA;
-  h.d = free;
+  hashContext.a = hashAllocate;
+  hashContext.d = free;
 #if MLSHASH256
-  h.i = (void(*)(void *))sha256init;
-  h.u = (void(*)(void *, const unsigned char *, unsigned int))sha256update;
-  h.f = (void(*)(void *, unsigned char *))sha256final;
-  h.h = 5U; /* 2^5 = 32 bytes = 256 bits */
+  hashContext.i = (void(*)(void *))sha256init;
+  hashContext.u = (void(*)(void *, const unsigned char *, unsigned int))sha256update;
+  hashContext.f = (void(*)(void *, unsigned char *))sha256final;
+  hashContext.h = 5U; /* 2^5 = 32 bytes = 256 bits */
 #else
-  h.i = (void(*)(void *))rmd128init;
-  h.u = (void(*)(void *, const unsigned char *, unsigned int))rmd128update;
-  h.f = (void(*)(void *, unsigned char *))rmd128final;
-  h.h = 4U; /* 2^4 = 16 bytes = 128 bits */
+  hashContext.i = (void(*)(void *))rmd128init;
+  hashContext.u = (void(*)(void *, const unsigned char *, unsigned int))rmd128update;
+  hashContext.f = (void(*)(void *, unsigned char *))rmd128final;
+  hashContext.h = 4U; /* 2^4 = 16 bytes = 128 bits */
 #endif
-  c.h = &h;
-  c.s = atoi(argv[1]);
-  if (!(r = mlsPrSz(c.h->h, c.s))) {
+  mlsContext.h = &hashContext;
+  mlsContext.s = atoi(argv[1]);
+  signing = atoi(argv[2]);
+  if (!(privateDataSize = mlsPrSz(mlsContext.h->h, mlsContext.s))
+   || !(workAreaSize = mlsWaSz(mlsContext.h->h, mlsContext.s))
+   || !(signatureSize = mlsSgSz(mlsContext.h->h, mlsContext.s))) {
     fprintf(stderr, "%s: number of signings too large\n", argv[0]);
     return (1);
   }
-  o = atoi(argv[2]);
-printf("s %u 2^s %u o %u pr %u wa %u sg %u\n", c.s, 1U << c.s, o, r, mlsWaSz(c.h->h, c.s), mlsSgSz(c.h->h, c.s));
-  if (!(c.r = malloc(r))) {
+  printf("signings 2^%u = %u signing %u: privateDataSize %u signatureSize %u workAreaSize %u\n"
+        ,mlsContext.s
+        ,1U << mlsContext.s
+        ,signing
+        ,privateDataSize
+        ,signatureSize
+        ,workAreaSize);
+  if (!(mlsContext.r = malloc(privateDataSize))) {
     fprintf(stderr, "%s: malloc\n", argv[0]);
     return (1);
   }
@@ -63,93 +96,53 @@ printf("s %u 2^s %u o %u pr %u wa %u sg %u\n", c.s, 1U << c.s, o, r, mlsWaSz(c.h
     mlsSz_t i;
     size_t j;
 
-    for (i = 0; i < r && (j = fread(c.r + i, 1, r - i, stdin)) > 0; i += j);
+    for (i = 0; i < privateDataSize && (j = fread(mlsContext.r + i, 1, privateDataSize - i, stdin)) > 0; i += j);
   }
-  if (!(w = malloc(mlsWaSz(c.h->h, c.s)))) {
+  if (!(workArea = malloc(workAreaSize))) {
     fprintf(stderr, "%s: malloc\n", argv[0]);
     return (1);
   }
-  if (!(k = mlsHash(&c, w))) {
+  if (!(hash = mlsHash(&mlsContext, workArea))) {
     fprintf(stderr, "%s: mlsHash\n", argv[0]);
     return (1);
   }
-  { /* print signing hash (merkle hash) */
-    char *bf;
-    unsigned int bs;
+  printHashHex(&hashContext, hash);
+  { /* create signature of the signing hash */
+    unsigned char *newWorkArea;
+    unsigned char *signature;
 
-    bs = 1U << (h.h + 1);
-#if MLSHASH256
-    if ((bf = malloc(bs))) {
-      sha256hex(k, bf);
-      printf("%.*s\n", bs, bf);
-    }
-#else
-    if ((bf = malloc(bs))) {
-      rmd128hex(k, bf);
-      printf("%.*s\n", bs, bf);
-    }
-#endif
-    free(bf);
-  }
-  { /* sign the signing hash */
-    unsigned char *t;
-    unsigned char *g;
-    unsigned int s;
-    unsigned int r;
-
-    if (!(t = malloc(mlsWaSz(c.h->h, c.s)))) {
+    if (!(newWorkArea = malloc(workAreaSize))) {
       fprintf(stderr, "%s: malloc\n", argv[0]);
       return (1);
     }
-    s = mlsSgSz(c.h->h, c.s);
-    if (!(g = malloc(s))) {
+    if (!(signature = malloc(signatureSize))) {
       fprintf(stderr, "%s: malloc\n", argv[0]);
       return (1);
     }
-    if (!mlsSign(&c, t, k, g, o)) {
+    if (!mlsSign(&mlsContext, newWorkArea, hash, signature, signing)) {
       fprintf(stderr, "%s: mlsSign\n", argv[0]);
       return (1);
     }
-    free(t);
-    if (mlsEgSz(c.h->h, g, s) != s) {
-      fprintf(stderr, "%s: mlsEgSz\n", argv[0]);
-      return (1);
-    }
-    if (!(r = mlsEwSz(c.h->h, g, s))) {
+    /* verify sizes from signature */
+    if (mlsEwSz(mlsContext.h->h, signature, signatureSize) != workAreaSize) {
       fprintf(stderr, "%s: mlsEwSz\n", argv[0]);
       return (1);
     }
-    if (!(t = malloc(r))) {
-      fprintf(stderr, "%s: malloc\n", argv[0]);
+    if (mlsEgSz(mlsContext.h->h, signature, signatureSize) != signatureSize) {
+      fprintf(stderr, "%s: mlsEgSz\n", argv[0]);
       return (1);
     }
-    if (!(k = mlsExtract(c.h, t, k, g))) {
+    /* extract signing hash from signature */
+    if (!(hash = mlsExtract(mlsContext.h, newWorkArea, hash, signature))) {
       fprintf(stderr, "%s: mlsExtract\n", argv[0]);
       return (1);
     }
-    free(g);
-    free(w);
-    w = t;
+    free(signature);
+    free(workArea);
+    workArea = newWorkArea;
   }
-  { /* print signing hash (merkle hash) */
-    char *bf;
-    unsigned int bs;
-
-    bs = 1U << (h.h + 1);
-#if MLSHASH256
-    if ((bf = malloc(bs))) {
-      sha256hex(k, bf);
-      printf("%.*s\n", bs, bf);
-    }
-#else
-    if ((bf = malloc(bs))) {
-      rmd128hex(k, bf);
-      printf("%.*s\n", bs, bf);
-    }
-#endif
-    free(bf);
-  }
-  free(w);
-  free(c.r);
+  printHashHex(&hashContext, hash);
+  free(workArea);
+  free(mlsContext.r);
   return (0);
 }
