@@ -16,17 +16,14 @@ printHashHex(
   unsigned int bs;
 
   bs = 1U << (hashContext->h + 1);
+  if ((bf = malloc(bs))) {
 #if MLSHASH256
-  if ((bf = malloc(bs))) {
     sha256hex(hash, bf);
-    printf("%.*s\n", bs, bf);
-  }
 #else
-  if ((bf = malloc(bs))) {
     rmd128hex(hash, bf);
+#endif
     printf("%.*s\n", bs, bf);
   }
-#endif
   free(bf);
 }
 
