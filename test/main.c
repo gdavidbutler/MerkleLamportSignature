@@ -70,10 +70,10 @@ main(
   hashContext.f = (void(*)(void *, unsigned char *))rmd128final;
   hashContext.h = 4U; /* 2^4 = 16 bytes = 128 bits */
 #endif
-
   mlsContext.h = &hashContext;
   mlsContext.s = atoi(argv[1]);
   signing = atoi(argv[2]);
+  printf("signings: 2^%u = %u signing: %u\n", mlsContext.s, 1U << mlsContext.s, signing);
 
   if (!(privateDataSize = mlsPrSz(mlsContext.h->h, mlsContext.s))
    || !(workAreaSize = mlsWaSz(mlsContext.h->h, mlsContext.s))
@@ -81,16 +81,9 @@ main(
     fprintf(stderr, "%s: number of signings too large\n", argv[0]);
     return (1);
   }
+  printf("privateDataSize: %u signatureSize: %u workAreaSize: %u\n", privateDataSize, signatureSize, workAreaSize);
 
-  printf("signings 2^%u = %u signing %u: privateDataSize %u signatureSize %u workAreaSize %u\n"
-        ,mlsContext.s
-        ,1U << mlsContext.s
-        ,signing
-        ,privateDataSize
-        ,signatureSize
-        ,workAreaSize);
-
-  if (!(mlsContext.r = malloc(privateDataSize))) {
+  if (!(mlsContext.r = calloc(privateDataSize, 1))) {
     fprintf(stderr, "%s: malloc\n", argv[0]);
     return (1);
   }
