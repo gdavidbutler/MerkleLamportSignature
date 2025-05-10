@@ -15,7 +15,7 @@ printHashHex(
   char *bf;
   unsigned int bs;
 
-  bs = 1U << (hashContext->h + 1);
+  bs = 1 << (hashContext->h + 1);
   if ((bf = malloc(bs))) {
 #if MLSHASH256
     sha256hex(hash, bf);
@@ -63,17 +63,17 @@ main(
   hashContext.i = (void(*)(void *))sha256init;
   hashContext.u = (void(*)(void *, const unsigned char *, unsigned int))sha256update;
   hashContext.f = (void(*)(void *, unsigned char *))sha256final;
-  hashContext.h = 5U; /* 2^5 = 32 bytes = 256 bits */
+  hashContext.h = 5; /* 2^5 = 32 bytes = 256 bits */
 #else
   hashContext.i = (void(*)(void *))rmd128init;
   hashContext.u = (void(*)(void *, const unsigned char *, unsigned int))rmd128update;
   hashContext.f = (void(*)(void *, unsigned char *))rmd128final;
-  hashContext.h = 4U; /* 2^4 = 16 bytes = 128 bits */
+  hashContext.h = 4; /* 2^4 = 16 bytes = 128 bits */
 #endif
   mlsContext.h = &hashContext;
   mlsContext.s = atoi(argv[1]);
   signing = atoi(argv[2]);
-  printf("signings: 2^%u = %u signing: %u\n", mlsContext.s, 1U << mlsContext.s, signing);
+  printf("signings: 2^%u = %u signing: %u\n", mlsContext.s, 1 << mlsContext.s, signing);
 
   if (!(privateDataSize = mlsPrSz(mlsContext.h->h, mlsContext.s))
    || !(workAreaSize = mlsWaSz(mlsContext.h->h, mlsContext.s))

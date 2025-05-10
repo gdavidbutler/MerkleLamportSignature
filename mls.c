@@ -25,7 +25,7 @@ mlsPrSz(
   unsigned char h
  ,unsigned char s
 ){
-  if (h + 3U + 1U + h + s >= sizeof (mlsSz_t) * 8U)
+  if (h + 3 + 1 + h + s >= sizeof (mlsSz_t) * 8)
     return (0);
   /*
    * private data size in bytes:
@@ -35,7 +35,7 @@ mlsPrSz(
    * times (2^h) bytes per hash
    * times (2^s) number of signings
    */
-  return (1U << (h + 3U + 1U + h + s));
+  return (1 << (h + 3 + 1 + h + s));
 }
 
 mlsSz_t
@@ -57,7 +57,7 @@ mlsWaSz(
    *      (1) node level
    * plus (2^h) hash size node
    */
-  return ((h + 3U + 1U + 2 * s - 1U) * (1U + (1U << h)));
+  return ((h + 3 + 1 + 2 * s - 1) * (1 + (1 << h)));
 }
 
 unsigned char *
@@ -80,9 +80,9 @@ mlsHash(
    || !(c = v->h->a()))
     return (0);
   s >>= v->h->h;
-  wh = w + v->h->h + 3U + 1U + 2 * v->s - 1U;
-  b = 1U << v->h->h;
-  b2 = b << 1U;
+  wh = w + v->h->h + 3 + 1 + 2 * v->s - 1;
+  b = 1 << v->h->h;
+  b2 = b << 1;
   for (i = j = 0; i < s; ++i, ++j) {
     *(w + j) = 0;
     v->h->i(c);
@@ -117,7 +117,7 @@ mlsSgSz(
    * times (2^1) values per hash bit
    * times (2^h) bytes per hash
    */
-  return (1U + 1U + s + (s << h) + (1U << (h + 3U + 1U + h)));
+  return (1 + 1 + s + (s << h) + (1 << (h + 3 + 1 + h)));
 }
 
 unsigned char *
@@ -142,17 +142,17 @@ mlsSign(
   unsigned int n;
   unsigned char t;
 
-  if (!v || !w || !a || !g || o >= (1U << v->s)
+  if (!v || !w || !a || !g || o >= (1 << v->s)
    || !v->h || !v->h->a || !v->h->i || !v->h->u || !v->h->f
    || !v->r
    || !(s = mlsPrSz(v->h->h, v->s))
    || !(c = v->h->a()))
     return (0);
   s >>= v->h->h;
-  wh = w + v->h->h + 3U + 1U + 2 * v->s - 1U;
-  b = 1U << v->h->h;
-  b2 = b << 1U;
-  o <<= v->h->h + 3U + 1U;
+  wh = w + v->h->h + 3 + 1 + 2 * v->s - 1;
+  b = 1 << v->h->h;
+  b2 = b << 1;
+  o <<= v->h->h + 3 + 1;
   for (i = j = 0; i < o; ++i, ++j) {
     *(w + j) = 0;
     v->h->i(c);
@@ -172,9 +172,9 @@ mlsSign(
     for (l = 0; l < b; ++l)
       *g++ = *(wh + k * b + l);
   }
-  for (m = v->h->h + 3U + 1U, n = j; j && *(w + j - 1) <= m; ++m, --j);
+  for (m = v->h->h + 3 + 1, n = j; j && *(w + j - 1) <= m; ++m, --j);
   for (k = 0; k < b; ++k) {
-    for (t = 0x80; t; t >>= 1U) {
+    for (t = 0x80; t; t >>= 1) {
       if (*(a + k) & t) {
         v->h->i(c);
         v->h->u(c, v->r + i * b, b);
@@ -228,10 +228,10 @@ mlsEgSz(
  ,const unsigned char *g
  ,unsigned int l
 ){
-  if (!g || !l || l < 1U + *g * (1U + (1U << h)) + (1U << (h + 3U + 1U + h)))
+  if (!g || !l || l < 1 + *g * (1 + (1 << h)) + (1 << (h + 3 + 1 + h)))
     return (0);
   /* signings from levels inside signature */
-  return(mlsSgSz(h, *g + *(g + 1U + *g * (1U + (1U << h)) + (1U << (h + 3U + 1U + h)))));
+  return(mlsSgSz(h, *g + *(g + 1 + *g * (1 + (1 << h)) + (1 << (h + 3 + 1 + h)))));
 }
 
 mlsSz_t
@@ -240,10 +240,10 @@ mlsEwSz(
  ,const unsigned char *g
  ,unsigned int l
 ){
-  if (!g || !l || l < 1U + *g * (1U + (1U << h)) + (1U << (h + 3U + 1U + h)))
+  if (!g || !l || l < 1 + *g * (1 + (1 << h)) + (1 << (h + 3 + 1 + h)))
     return (0);
   /* signings from levels inside signature */
-  return(mlsWaSz(h, *g + *(g + 1U + *g * (1U + (1U << h)) + (1U << (h + 3U + 1U + h)))));
+  return(mlsWaSz(h, *g + *(g + 1 + *g * (1 + (1 << h)) + (1 << (h + 3 + 1 + h)))));
 }
 
 unsigned char *
@@ -266,9 +266,9 @@ mlsExtract(
    || !v->a || !v->i || !v->u || !v->f
    || !(c = v->a()))
     return (0);
-  wh = w + v->h + 3U + 1U + 2 * (*g + *(g + 1U + *g * (1U + (1U << v->h)) + (1U << (v->h + 3U + 1U + v->h)))) - 1U;
-  b = 1U << v->h;
-  b2 = b << 1U;
+  wh = w + v->h + 3 + 1 + 2 * (*g + *(g + 1 + *g * (1 + (1 << v->h)) + (1 << (v->h + 3 + 1 + v->h)))) - 1;
+  b = 1 << v->h;
+  b2 = b << 1;
   j = *g++;
   for (k = 0; k < j; ++k) {
     *(w + k) = *g++;
@@ -276,7 +276,7 @@ mlsExtract(
       *(wh + k * b + i) = *g++;
   }
   for (k = 0; k < b; ++k) {
-    for (t = 0x80; t; t >>= 1U) {
+    for (t = 0x80; t; t >>= 1) {
       *(w + j) = 0;
       if (*(a + k) & t) {
         for (i = 0; i < b; ++i)
