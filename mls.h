@@ -18,6 +18,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifndef __MLS_H__
+#define __MLS_H__
+
 /*
  * sizeof (mlsSz_t) * 8 bits per byte must be greater than
  *      h (2^h bytes per hash)
@@ -107,3 +110,5 @@ mlsExtract(
  ,const unsigned char * /* signed hash */
  ,const unsigned char * /* signature */
 );
+
+#endif /* __MLS_H__ */
