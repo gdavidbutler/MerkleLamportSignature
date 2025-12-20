@@ -76,7 +76,10 @@ mlsSgSz(
  ,unsigned char /* (2^s) number of signings */
 );
 
-/* return pointer to byte after signature, 0 on error */
+/*
+ * return pointer to byte after signature, 0 on error
+ * WARNING: caller must provide signature buffer of at least mlsSgSz bytes
+ */
 unsigned char *
 mlsSign(
   mlsCtx_t *
@@ -102,7 +105,11 @@ mlsEwSz(
  ,unsigned int          /* signature length */
 );
 
-/* return pointer to signing hash in work area, 0 on error */
+/*
+ * return pointer to signing hash in work area, 0 on error
+ * WARNING: caller must validate signature length with mlsEgSz/mlsEwSz first
+ * WARNING: caller must provide work area of at least mlsEwSz bytes
+ */
 unsigned char *
 mlsExtract(
   mlsHsh_t *

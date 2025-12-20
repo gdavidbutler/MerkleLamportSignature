@@ -35,7 +35,7 @@ mlsPrSz(
    * times (2^h) bytes per hash
    * times (2^s) number of signings
    */
-  return (1 << (h + 3 + 1 + h + s));
+  return (1U << (h + 3 + 1 + h + s));
 }
 
 mlsSz_t
@@ -52,12 +52,12 @@ mlsWaSz(
    * plus (3) power of bits per byte
    * plus (1) power of values per hash bit
    * plus (s) power of number of signings (leafs)
-   * plus (s-1) power of number of signings (nodes)
+   * plus max(s-1, 1) power of number of signings (nodes)
    * times:
    *      (1) node level
    * plus (2^h) hash size node
    */
-  return ((h + 3 + 1 + 2 * s - 1) * (1 + (1 << h)));
+  return ((h + 3 + (s > 1 ? 2 * s : 3)) * (1 + (1U << h)));
 }
 
 unsigned char *
@@ -80,8 +80,8 @@ mlsHash(
    || !(c = v->h->a()))
     return (0);
   s >>= v->h->h;
-  wh = w + v->h->h + 3 + 1 + 2 * v->s - 1;
-  b = 1 << v->h->h;
+  wh = w + v->h->h + 3 + (v->s > 1 ? 2 * v->s : 3);
+  b = 1U << v->h->h;
   b2 = b << 1;
   for (i = j = 0; i < s; ++i, ++j) {
     *(w + j) = 0;
@@ -117,7 +117,7 @@ mlsSgSz(
    * times (2^1) values per hash bit
    * times (2^h) bytes per hash
    */
-  return (1 + 1 + s + (s << h) + (1 << (h + 3 + 1 + h)));
+  return (1 + 1 + s + (s << h) + (1U << (h + 3 + 1 + h)));
 }
 
 unsigned char *
@@ -142,15 +142,15 @@ mlsSign(
   unsigned int n;
   unsigned char t;
 
-  if (!v || !w || !a || !g || o >= (1 << v->s)
+  if (!v || !w || !a || !g || o >= (1U << v->s)
    || !v->h || !v->h->a || !v->h->i || !v->h->u || !v->h->f
    || !v->r
    || !(s = mlsPrSz(v->h->h, v->s))
    || !(c = v->h->a()))
     return (0);
   s >>= v->h->h;
-  wh = w + v->h->h + 3 + 1 + 2 * v->s - 1;
-  b = 1 << v->h->h;
+  wh = w + v->h->h + 3 + (v->s > 1 ? 2 * v->s : 3);
+  b = 1U << v->h->h;
   b2 = b << 1;
   o <<= v->h->h + 3 + 1;
   for (i = j = 0; i < o; ++i, ++j) {
@@ -228,10 +228,10 @@ mlsEgSz(
  ,const unsigned char *g
  ,unsigned int l
 ){
-  if (!g || !l || l < 1 + *g * (1 + (1 << h)) + (1 << (h + 3 + 1 + h)))
+  if (!g || !l || l <= 1 + *g * (1 + (1U << h)) + (1U << (h + 3 + 1 + h)))
     return (0);
   /* signings from levels inside signature */
-  return(mlsSgSz(h, *g + *(g + 1 + *g * (1 + (1 << h)) + (1 << (h + 3 + 1 + h)))));
+  return(mlsSgSz(h, *g + *(g + 1 + *g * (1 + (1U << h)) + (1U << (h + 3 + 1 + h)))));
 }
 
 mlsSz_t
@@ -240,10 +240,10 @@ mlsEwSz(
  ,const unsigned char *g
  ,unsigned int l
 ){
-  if (!g || !l || l < 1 + *g * (1 + (1 << h)) + (1 << (h + 3 + 1 + h)))
+  if (!g || !l || l <= 1 + *g * (1 + (1U << h)) + (1U << (h + 3 + 1 + h)))
     return (0);
   /* signings from levels inside signature */
-  return(mlsWaSz(h, *g + *(g + 1 + *g * (1 + (1 << h)) + (1 << (h + 3 + 1 + h)))));
+  return(mlsWaSz(h, *g + *(g + 1 + *g * (1 + (1U << h)) + (1U << (h + 3 + 1 + h)))));
 }
 
 unsigned char *
@@ -266,8 +266,9 @@ mlsExtract(
    || !v->a || !v->i || !v->u || !v->f
    || !(c = v->a()))
     return (0);
-  wh = w + v->h + 3 + 1 + 2 * (*g + *(g + 1 + *g * (1 + (1 << v->h)) + (1 << (v->h + 3 + 1 + v->h)))) - 1;
-  b = 1 << v->h;
+  b = 1U << v->h;
+  b2 = *g + *(g + 1 + *g * (1 + b) + (b << (v->h + 4)));
+  wh = w + v->h + 3 + (b2 > 1 ? 2 * b2 : 3);
   b2 = b << 1;
   j = *g++;
   for (k = 0; k < j; ++k) {
