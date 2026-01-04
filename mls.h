@@ -50,9 +50,9 @@ typedef struct {
 
 /* mls Context */
 typedef struct {
-  mlsHsh_t *h;      /* hash context */
-  unsigned char *r; /* private data (mlsPrSz) */
-  unsigned char s;  /* (2^s) number of signings */
+  const mlsHsh_t *h; /* hash context */
+  unsigned char *r;  /* private data (mlsPrSz) */
+  unsigned char s;   /* (2^s) number of signings */
 } mlsCtx_t;
 
 /* return size, in bytes, of work area */
@@ -112,7 +112,7 @@ mlsEwSz(
  */
 unsigned char *
 mlsExtract(
-  mlsHsh_t *
+  const mlsHsh_t *
  ,unsigned char *       /* work area (mlsEwSz) */
  ,const unsigned char * /* signed hash */
  ,const unsigned char * /* signature */

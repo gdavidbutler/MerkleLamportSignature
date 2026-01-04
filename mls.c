@@ -248,7 +248,7 @@ mlsEwSz(
 
 unsigned char *
 mlsExtract(
-  mlsHsh_t *v
+  const mlsHsh_t *v
  ,unsigned char *w
  ,const unsigned char *a
  ,const unsigned char *g
