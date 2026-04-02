@@ -18,6 +18,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
 #include "mls.h"
 
 mlsSz_t
@@ -65,8 +66,13 @@ mlsHash(
   mlsCtx_t *v
  ,unsigned char *w
 ){
+  const mlsHsh_t *hv;
   unsigned char *wh;
+  unsigned char *rp;
   void *c;
+  void (*hi)(void *);
+  void (*hu)(void *, const unsigned char *, unsigned int);
+  void (*hf)(void *, unsigned char *);
   mlsSz_t s;
   unsigned int b;
   unsigned int b2;
@@ -79,24 +85,29 @@ mlsHash(
    || !(s = mlsPrSz(v->h->h, v->s))
    || !(c = v->h->a()))
     return (0);
-  s >>= v->h->h;
-  wh = w + v->h->h + 3 + (v->s > 1 ? 2 * v->s : 3);
-  b = 1U << v->h->h;
+  hv = v->h;
+  hi = hv->i;
+  hu = hv->u;
+  hf = hv->f;
+  s >>= hv->h;
+  wh = w + hv->h + 3 + (v->s > 1 ? 2 * v->s : 3);
+  b = 1U << hv->h;
   b2 = b << 1;
-  for (i = j = 0; i < s; ++i, ++j) {
+  rp = v->r;
+  for (i = j = 0; i < s; ++i, ++j, rp += b) {
     *(w + j) = 0;
-    v->h->i(c);
-    v->h->u(c, v->r + i * b, b);
-    v->h->f(c, wh + j * b);
+    hi(c);
+    hu(c, rp, b);
+    hf(c, wh + j * b);
     while (j && *(w + j - 1) == *(w + j)) {
       ++*(w + --j);
-      v->h->i(c);
-      v->h->u(c, wh + j * b, b2);
-      v->h->f(c, wh + j * b);
+      hi(c);
+      hu(c, wh + j * b, b2);
+      hf(c, wh + j * b);
     }
   }
-  if (v->h->d)
-    v->h->d(c);
+  if (hv->d)
+    hv->d(c);
   return (wh);
 }
 
@@ -128,9 +139,14 @@ mlsSign(
  ,unsigned char *g
  ,unsigned int o
 ){
+  const mlsHsh_t *hv;
   unsigned char *z;
   unsigned char *wh; /* work area hashes */
+  unsigned char *rp;
   void *c;
+  void (*hi)(void *);
+  void (*hu)(void *, const unsigned char *, unsigned int);
+  void (*hf)(void *, unsigned char *);
   mlsSz_t s;
   unsigned int b;
   unsigned int b2;
@@ -148,63 +164,67 @@ mlsSign(
    || !(s = mlsPrSz(v->h->h, v->s))
    || !(c = v->h->a()))
     return (0);
-  s >>= v->h->h;
-  wh = w + v->h->h + 3 + (v->s > 1 ? 2 * v->s : 3);
-  b = 1U << v->h->h;
+  hv = v->h;
+  hi = hv->i;
+  hu = hv->u;
+  hf = hv->f;
+  s >>= hv->h;
+  wh = w + hv->h + 3 + (v->s > 1 ? 2 * v->s : 3);
+  b = 1U << hv->h;
   b2 = b << 1;
-  o <<= v->h->h + 3 + 1;
-  for (i = j = 0; i < o; ++i, ++j) {
+  o <<= hv->h + 3 + 1;
+  rp = v->r;
+  for (i = j = 0; i < o; ++i, ++j, rp += b) {
     *(w + j) = 0;
-    v->h->i(c);
-    v->h->u(c, v->r + i * b, b);
-    v->h->f(c, wh + j * b);
+    hi(c);
+    hu(c, rp, b);
+    hf(c, wh + j * b);
     while (j && *(w + j - 1) == *(w + j)) {
       ++*(w + --j);
-      v->h->i(c);
-      v->h->u(c, wh + j * b, b2);
-      v->h->f(c, wh + j * b);
+      hi(c);
+      hu(c, wh + j * b, b2);
+      hf(c, wh + j * b);
     }
   }
   z = g;
   *g++ = j;
   for (k = 0; k < j; ++k) {
     *g++ = *(w + k);
-    for (l = 0; l < b; ++l)
-      *g++ = *(wh + k * b + l);
+    memcpy(g, wh + k * b, b);
+    g += b;
   }
-  for (m = v->h->h + 3 + 1, n = j; j && *(w + j - 1) <= m; ++m, --j);
+  for (m = hv->h + 3 + 1, n = j; j && *(w + j - 1) <= m; ++m, --j);
   for (k = 0; k < b; ++k) {
     for (t = 0x80; t; t >>= 1) {
       if (*(a + k) & t) {
-        v->h->i(c);
-        v->h->u(c, v->r + i * b, b);
-        v->h->f(c, g);
+        hi(c);
+        hu(c, rp, b);
+        hf(c, g);
         g += b;
-        ++i;
-        for (l = 0; l < b; ++l)
-          *g++ = *(v->r + i * b + l);
+        memcpy(g, rp + b, b);
+        g += b;
       } else {
-        for (l = 0; l < b; ++l)
-          *g++ = *(v->r + i * b + l);
-        ++i;
-        v->h->i(c);
-        v->h->u(c, v->r + i * b, b);
-        v->h->f(c, g);
+        memcpy(g, rp, b);
+        g += b;
+        hi(c);
+        hu(c, rp + b, b);
+        hf(c, g);
         g += b;
       }
-      ++i;
+      rp += b2;
+      i += 2;
     }
   }
-  for (k = j = 0; i < s; ++i, ++j) {
+  for (k = j = 0; i < s; ++i, ++j, rp += b) {
     *(w + j) = 0;
-    v->h->i(c);
-    v->h->u(c, v->r + i * b, b);
-    v->h->f(c, wh + j * b);
+    hi(c);
+    hu(c, rp, b);
+    hf(c, wh + j * b);
     while (j > k && *(w + j - 1) == *(w + j)) {
       ++*(w + --j);
-      v->h->i(c);
-      v->h->u(c, wh + j * b, b2);
-      v->h->f(c, wh + j * b);
+      hi(c);
+      hu(c, wh + j * b, b2);
+      hf(c, wh + j * b);
     }
     if (*(w + j) == m)
       for (++k, ++m, l = n; l && (t = *(z + l + (l - 1) * b)) <= m; --l)
@@ -214,11 +234,11 @@ mlsSign(
   *g++ = j;
   for (k = 0; k < j; ++k) {
     *g++ = *(w + k);
-    for (l = 0; l < b; ++l)
-      *g++ = *(wh + k * b + l);
+    memcpy(g, wh + k * b, b);
+    g += b;
   }
-  if (v->h->d)
-    v->h->d(c);
+  if (hv->d)
+    hv->d(c);
   return (g);
 }
 
@@ -228,10 +248,15 @@ mlsEgSz(
  ,const unsigned char *g
  ,unsigned int l
 ){
-  if (!g || !l || l <= 1 + *g * (1 + (1U << h)) + (1U << (h + 3 + 1 + h)))
+  unsigned int off;
+
+  if (!g || !l)
+    return (0);
+  off = 1 + *g * (1 + (1U << h)) + (1U << (h + 3 + 1 + h));
+  if (l <= off)
     return (0);
   /* signings from levels inside signature */
-  return(mlsSgSz(h, *g + *(g + 1 + *g * (1 + (1U << h)) + (1U << (h + 3 + 1 + h)))));
+  return (mlsSgSz(h, *g + *(g + off)));
 }
 
 mlsSz_t
@@ -240,10 +265,15 @@ mlsEwSz(
  ,const unsigned char *g
  ,unsigned int l
 ){
-  if (!g || !l || l <= 1 + *g * (1 + (1U << h)) + (1U << (h + 3 + 1 + h)))
+  unsigned int off;
+
+  if (!g || !l)
+    return (0);
+  off = 1 + *g * (1 + (1U << h)) + (1U << (h + 3 + 1 + h));
+  if (l <= off)
     return (0);
   /* signings from levels inside signature */
-  return(mlsWaSz(h, *g + *(g + 1 + *g * (1 + (1U << h)) + (1U << (h + 3 + 1 + h)))));
+  return (mlsWaSz(h, *g + *(g + off)));
 }
 
 unsigned char *
@@ -255,9 +285,11 @@ mlsExtract(
 ){
   unsigned char *wh; /* work area hashes */
   void *c;
+  void (*hi)(void *);
+  void (*hu)(void *, const unsigned char *, unsigned int);
+  void (*hf)(void *, unsigned char *);
   unsigned int b;
   unsigned int b2;
-  unsigned int i;
   unsigned int j;
   unsigned int k;
   unsigned char t;
@@ -266,6 +298,9 @@ mlsExtract(
    || !v->a || !v->i || !v->u || !v->f
    || !(c = v->a()))
     return (0);
+  hi = v->i;
+  hu = v->u;
+  hf = v->f;
   b = 1U << v->h;
   b2 = *g + *(g + 1 + *g * (1 + b) + (b << (v->h + 4)));
   wh = w + v->h + 3 + (b2 > 1 ? 2 * b2 : 3);
@@ -273,35 +308,35 @@ mlsExtract(
   j = *g++;
   for (k = 0; k < j; ++k) {
     *(w + k) = *g++;
-    for(i = 0; i < b; ++i)
-      *(wh + k * b + i) = *g++;
+    memcpy(wh + k * b, g, b);
+    g += b;
   }
   for (k = 0; k < b; ++k) {
     for (t = 0x80; t; t >>= 1) {
       *(w + j) = 0;
       if (*(a + k) & t) {
-        for (i = 0; i < b; ++i)
-          *(wh + j * b + i) = *g++;
+        memcpy(wh + j * b, g, b);
+        g += b;
         ++j;
-        v->i(c);
-        v->u(c, g, b);
-        v->f(c, wh + j * b);
+        hi(c);
+        hu(c, g, b);
+        hf(c, wh + j * b);
         g += b;
       } else {
-        v->i(c);
-        v->u(c, g, b);
-        v->f(c, wh + j * b);
+        hi(c);
+        hu(c, g, b);
+        hf(c, wh + j * b);
         g += b;
         ++j;
-        for (i = 0; i < b; ++i)
-          *(wh + j * b + i) = *g++;
+        memcpy(wh + j * b, g, b);
+        g += b;
       }
       *(w + j) = 0;
       while (j && *(w + j - 1) == *(w + j)) {
         ++*(w + --j);
-        v->i(c);
-        v->u(c, wh + j * b, b2);
-        v->f(c, wh + j * b);
+        hi(c);
+        hu(c, wh + j * b, b2);
+        hf(c, wh + j * b);
       }
       ++j;
     }
@@ -309,13 +344,13 @@ mlsExtract(
   k = *g++;
   for (; k; ++j, --k) {
     *(w + j) = *g++;
-    for (i = 0; i < b; ++i)
-      *(wh + j * b + i) = *g++;
+    memcpy(wh + j * b, g, b);
+    g += b;
     while (j && *(w + j - 1) == *(w + j)) {
       ++*(w + --j);
-      v->i(c);
-      v->u(c, wh + j * b, b2);
-      v->f(c, wh + j * b);
+      hi(c);
+      hu(c, wh + j * b, b2);
+      hf(c, wh + j * b);
     }
   }
   if (v->d)
