@@ -276,6 +276,27 @@ mlsEwSz(
   return (mlsWaSz(h, *g + *(g + off)));
 }
 
+unsigned int
+mlsEgOf(
+  unsigned char h
+ ,const unsigned char *g
+ ,unsigned int l
+){
+  unsigned int b;
+  unsigned int o;
+  unsigned int j;
+
+  if (!g || !l)
+    return (0);
+  b = 1U << h;
+  /* left authentication block must fit: count byte + j * (level + hash) */
+  if (l < 1 + *g * (1 + b))
+    return (0);
+  for (o = 0, j = *g++; j; --j, g += b)
+    o += 1U << *g++;
+  return ((o >> (h + 3 + 1)) + 1);
+}
+
 unsigned char *
 mlsExtract(
   const mlsHsh_t *v

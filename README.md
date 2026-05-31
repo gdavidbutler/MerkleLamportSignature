@@ -13,7 +13,7 @@ The example driver program demonstrates rmd128 and sha256.
 
 The amount of private data and the signature size is dependent on the size of the hash and the number of signings desired to a signing hash.
 
-For example, using a 128 bit, (2^5 = 16 byte) hash and signing a single message to a 128 bit signing hash:
+For example, using a 128 bit, (2^4 = 16 byte) hash and signing a single message to a 128 bit signing hash:
 
 ./mls128 0 0 </dev/zero
 

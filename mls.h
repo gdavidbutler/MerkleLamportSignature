@@ -105,6 +105,14 @@ mlsEwSz(
  ,unsigned int          /* signature length */
 );
 
+/* return signing offset + 1 used in mlsSign, from signature, 0 on error */
+unsigned int
+mlsEgOf(
+  unsigned char /* (2^h) bytes per hash  */
+ ,const unsigned char * /* signature */
+ ,unsigned int          /* signature length */
+);
+
 /*
  * return pointer to signing hash in work area, 0 on error
  * WARNING: caller must validate signature length with mlsEgSz/mlsEwSz first

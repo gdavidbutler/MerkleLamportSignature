@@ -132,6 +132,10 @@ main(
       fprintf(stderr, "%s: mlsEgSz\n", argv[0]);
       return (1);
     }
+    if (mlsEgOf(mlsContext.h->h, signature, signatureSize) != signing + 1) {
+      fprintf(stderr, "%s: mlsEgOf\n", argv[0]);
+      return (1);
+    }
 
     /* extract signing hash from signature */
     if (!(hash = mlsExtract(mlsContext.h, newWorkArea, hash, signature))) {
