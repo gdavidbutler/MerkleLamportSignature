@@ -75,9 +75,9 @@ main(
   signing = atoi(argv[2]);
   printf("signings: 2^%u = %u signing: %u\n", mlsContext.s, 1 << mlsContext.s, signing);
 
-  if (!(privateDataSize = mlsPrSz(mlsContext.h->h, mlsContext.s))
-   || !(workAreaSize = mlsWaSz(mlsContext.h->h, mlsContext.s))
-   || !(signatureSize = mlsSgSz(mlsContext.h->h, mlsContext.s))) {
+  if (!(privateDataSize = mlsPrSz(&mlsContext))
+   || !(workAreaSize = mlsWaSz(&mlsContext))
+   || !(signatureSize = mlsSgSz(&mlsContext))) {
     fprintf(stderr, "%s: number of signings too large\n", argv[0]);
     return (1);
   }

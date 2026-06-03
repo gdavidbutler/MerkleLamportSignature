@@ -31,13 +31,6 @@
  */
 typedef unsigned int mlsSz_t; /* largest size, in bytes, of private data */
 
-/* return size, in bytes, of private data, 0 on mlsSz_t overflow */
-mlsSz_t
-mlsPrSz(
-  unsigned char /* (2^h) bytes per hash  */
- ,unsigned char /* (2^s) number of signings */
-);
-
 /* hash Context */
 typedef struct {
   void *(*a)(void);                                       /* hashContext allocate */
@@ -55,11 +48,16 @@ typedef struct {
   unsigned char s;   /* (2^s) number of signings */
 } mlsCtx_t;
 
+/* return size, in bytes, of private data, 0 on mlsSz_t overflow */
+mlsSz_t
+mlsPrSz(
+  const mlsCtx_t *
+);
+
 /* return size, in bytes, of work area */
 mlsSz_t
 mlsWaSz(
-  unsigned char /* (2^h) bytes per hash  */
- ,unsigned char /* (2^s) number of signings */
+  const mlsCtx_t *
 );
 
 /* return pointer to signing hash in work area, 0 on error */
@@ -72,8 +70,7 @@ mlsHash(
 /* return size, in bytes, of signature data */
 mlsSz_t
 mlsSgSz(
-  unsigned char /* (2^h) bytes per hash  */
- ,unsigned char /* (2^s) number of signings */
+  const mlsCtx_t *
 );
 
 /*
