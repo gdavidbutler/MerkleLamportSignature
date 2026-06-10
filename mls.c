@@ -159,10 +159,11 @@ mlsSign(
   unsigned int n;
   unsigned char t;
 
-  if (!v || !w || !a || !g || o >= (1U << v->s)
+  if (!v || !w || !a || !g
    || !v->h || !v->h->a || !v->h->i || !v->h->u || !v->h->f
    || !v->r
    || !(s = mlsPrSz(v))
+   || o >= (1U << v->s)
    || !(c = v->h->a()))
     return (0);
   hv = v->h;
@@ -295,8 +296,11 @@ mlsEgOf(
   /* left authentication block must fit: count byte + j * (level + hash) */
   if (l < 1 + *g * (1 + b))
     return (0);
-  for (o = 0, j = *g++; j; --j, g += b)
+  for (o = 0, j = *g++; j; --j, g += b) {
+    if (*g >= sizeof (mlsSz_t) * 8)
+      return (0);
     o += 1U << *g++;
+  }
   return ((o >> (h + 3 + 1)) + 1);
 }
 
