@@ -18,7 +18,7 @@ For example, using a 128 bit, (2^4 = 16 byte) hash and signing a single message 
 ./mls128 0 0 </dev/zero
 
 * signings: 2^0 = 1, use signing: 0
-* privateDataSize: 4096, signatureSize: 4098, workAreaSize: 119
+* privateDataSize: 4096, signatureSize: 4098, workAreaSize: 170
 
 The signature is not small but grows slowly as the number of desired signings increases.
 For example to sign 1024 messages:
