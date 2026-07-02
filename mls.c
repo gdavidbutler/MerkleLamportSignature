@@ -25,7 +25,7 @@ mlsSz_t
 mlsPrSz(
   const mlsCtx_t *v
 ){
-  if (!v || !v->h || v->h->h + 3 + 1 + v->h->h + v->s >= sizeof (mlsSz_t) * 8)
+  if (!v || !v->h || v->h->h + 3 + 1 + v->h->h + v->s >= (int)sizeof (mlsSz_t) * 8)
     return (0);
   /*
    * private data size in bytes:
